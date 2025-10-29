@@ -45,6 +45,8 @@ allowing the cache size to be adjusted according to the system parameters and th
 - Integration with other apps through API
 - Cross-browser modern web interface
 - Optional DLNA server
+- **Jellyfin Integration** - auto-create `.strm` files for seamless Jellyfin integration
+- **TMDB Integration** - automatic poster and metadata fetching for movies and TV shows
 
 ## Getting Started
 
@@ -125,6 +127,12 @@ On FreeBSD (TrueNAS/FreeNAS) you can use this plugin: <https://github.com/filka9
 - `--pubipv4 PUBIPV4`, `-4 PUBIPV4` - set public IPv4 addr
 - `--pubipv6 PUBIPV6`, `-6 PUBIPV6` - set public IPv6 addr
 - `--searchwa`, `-s` - allow search without authentication
+- `--jlfnaddr PATH` - Jellyfin .strm files path (e.g., /media/jellyfin/metadata)
+- `--jlfnsrv URL` - Jellyfin server URL (e.g., http://127.0.0.1:8096)
+- `--jlfnapi KEY` - Jellyfin API key for future integrations
+- `--jlfnautocreate` - auto-create .strm files when adding torrents via web
+- `--tmdbapikey KEY` - TMDB API key for automatic posters and metadata
+- `--torrserverhost URL` - public TorrServer URL for .strm files (e.g., http://192.168.1.197:5665)
 - `--help`, `-h` - display this help and exit
 - `--version` - display version and exit
 
@@ -157,6 +165,12 @@ docker run --rm -d --name torrserver -v ~/ts:/opt/ts -p 8090:8090 ghcr.io/yourok
 - `TS_CONF_PATH` - for overriding torrserver config path inside container. Example `/opt/tsss`
 - `TS_TORR_DIR` - for overriding torrents directory. Example `/opt/torr_files`
 - `TS_LOG_PATH` - for overriding log path. Example `/opt/torrserver.log`
+- `TS_JLFN_ADDR` - Jellyfin .strm files path. Example `/data/jellyfin-strm`
+- `TS_JLFN_SRV` - Jellyfin server URL. Example `http://127.0.0.1:8096`
+- `TS_JLFN_API` - Jellyfin API key
+- `TS_JLFN_AUTO_CREATE` - if 1, auto-create .strm files when adding torrents
+- `TS_TMDB_API_KEY` - TMDB API key for automatic posters and metadata
+- `TS_TORRSERVER_HOST` - public TorrServer URL for .strm files. Example `http://192.168.0.123:5665`
 
 Example with full overrided command (on default values):
 
@@ -181,14 +195,56 @@ services:
             - TS_HTTPAUTH=0
             - TS_CONF_PATH=/opt/ts/config
             - TS_TORR_DIR=/opt/ts/torrents
+            # Jellyfin & TMDB Integration (optional)
+            - TS_JLFN_ADDR=/data/jellyfin-strm
+            - TS_JLFN_SRV=http://127.0.0.1:8096
+            - TS_JLFN_API=your_jellyfin_api_key
+            - TS_JLFN_AUTO_CREATE=1
+            - TS_TMDB_API_KEY=your_tmdb_api_key
+            - TS_TORRSERVER_HOST=http://192.168.1.197:5665
         volumes:
             - './CACHE:/opt/ts/torrents'
             - './CONFIG:/opt/ts/config'
+            - './jellyfin-strm:/data/jellyfin-strm'
         ports:
             - '5665:5665'
         restart: unless-stopped
         
 
+```
+
+**Alternative with command-line args:**
+
+```yml
+version: '3.3'
+services:
+    torrserver:
+        image: ghcr.io/yourok/torrserver
+        container_name: torrserver
+        network_mode: host
+        command:
+            - "torrserver"
+            - "--port"
+            - "5665"
+            - "--dontkill"
+            - "--jlfnaddr"
+            - "/data/jellyfin-strm"
+            - "--jlfnsrv"
+            - "http://127.0.0.1:8096"
+            - "--jlfnapi"
+            - "your_jellyfin_api_key"
+            - "--jlfnautocreate"
+            - "--tmdbapikey"
+            - "your_tmdb_api_key"
+            - "--torrserverhost"
+            - "http://192.168.1.197:5665"
+        volumes:
+            - './CACHE:/opt/ts/torrents'
+            - './CONFIG:/opt/ts/config'
+            - './jellyfin-strm:/data/jellyfin-strm'
+        ports:
+            - '5665:5665'
+        restart: unless-stopped
 ```
 
 ### Smart TV (using Media Station X)
