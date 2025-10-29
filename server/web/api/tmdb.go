@@ -2,11 +2,11 @@ package api
 
 import (
 	"net/http"
-	
+
 	"server/log"
 	set "server/settings"
 	"server/tmdb"
-	
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,10 +18,10 @@ type tmdbSearchRequest struct {
 }
 
 type tmdbSearchResponse struct {
-	Success bool          `json:"success"`
-	Data    *tmdb.Media   `json:"data,omitempty"`
-	Posters []string      `json:"posters,omitempty"`
-	Error   string        `json:"error,omitempty"`
+	Success bool        `json:"success"`
+	Data    *tmdb.Media `json:"data,omitempty"`
+	Posters []string    `json:"posters,omitempty"`
+	Error   string      `json:"error,omitempty"`
 }
 
 // tmdbSearch godoc
@@ -43,7 +43,7 @@ func tmdbSearch(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	// Check if TMDB API key is configured
 	if set.BTsets.TMDBApiKey == "" {
 		c.JSON(http.StatusOK, tmdbSearchResponse{
@@ -52,7 +52,7 @@ func tmdbSearch(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	if req.Query == "" {
 		c.JSON(http.StatusBadRequest, tmdbSearchResponse{
 			Success: false,
@@ -60,12 +60,12 @@ func tmdbSearch(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	client := tmdb.NewClient(set.BTsets.TMDBApiKey)
-	
+
 	var media *tmdb.Media
 	var err error
-	
+
 	// Determine search type
 	switch req.Type {
 	case "movie":
@@ -79,7 +79,7 @@ func tmdbSearch(c *gin.Context) {
 		// Auto-detect from torrent name
 		media, err = client.SearchAuto(req.Query)
 	}
-	
+
 	if err != nil {
 		log.TLogln("TMDB search error:", err)
 		c.JSON(http.StatusOK, tmdbSearchResponse{
@@ -88,7 +88,7 @@ func tmdbSearch(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	// Generate poster URLs (multiple sizes)
 	posters := []string{}
 	if media.PosterPath != "" {
@@ -97,7 +97,7 @@ func tmdbSearch(c *gin.Context) {
 		posters = append(posters, "https://image.tmdb.org/t/p/w300"+media.PosterPath)
 		posters = append(posters, "https://image.tmdb.org/t/p/w780"+media.PosterPath)
 	}
-	
+
 	c.JSON(http.StatusOK, tmdbSearchResponse{
 		Success: true,
 		Data:    media,

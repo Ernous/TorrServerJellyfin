@@ -195,13 +195,12 @@ services:
             - TS_HTTPAUTH=0
             - TS_CONF_PATH=/opt/ts/config
             - TS_TORR_DIR=/opt/ts/torrents
-            # Jellyfin & TMDB Integration (optional)
             - TS_JLFN_ADDR=/data/jellyfin-strm
             - TS_JLFN_SRV=http://127.0.0.1:8096
             - TS_JLFN_API=your_jellyfin_api_key
             - TS_JLFN_AUTO_CREATE=1
             - TS_TMDB_API_KEY=your_tmdb_api_key
-            - TS_TORRSERVER_HOST=http://192.168.1.197:5665
+            - TS_TORRSERVER_HOST=http://192.168.0.123:5665
         volumes:
             - './CACHE:/opt/ts/torrents'
             - './CONFIG:/opt/ts/config'
