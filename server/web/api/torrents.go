@@ -289,22 +289,37 @@ func createStrmFilesForTorrent(tor *torr.Torrent, c *gin.Context) {
 	// Determine category (serials/films)
 	catPath := ""
 	torName := tor.Name()
-	torTitle := strings.ToLower(torName)
-
-	// Check if it's a series by name patterns
-	seasonPattern := regexp.MustCompile(`s\d+`)
-	episodePattern := regexp.MustCompile(`e\d+`)
-
-	isSeries := seasonPattern.MatchString(torTitle) ||
-		episodePattern.MatchString(torTitle)
-
-	if isSeries {
+	
+	// Use torrent category from web UI if available
+	torCategory := strings.ToLower(tor.Category)
+	log.TLogln("Torrent category from UI:", torCategory)
+	
+	// Map Russian/English categories to folder names
+	switch torCategory {
+	case "сериалы", "серіали", "serials", "series", "tv", "tv shows":
 		catPath = "torrSerials"
-	} else {
+		log.TLogln("Category mapped to torrSerials (from UI category)")
+	case "фильмы", "фільми", "movies", "films":
 		catPath = "torrFilms"
+		log.TLogln("Category mapped to torrFilms (from UI category)")
+	default:
+		// Auto-detect if category not set or unknown
+		torTitle := strings.ToLower(torName)
+		seasonPattern := regexp.MustCompile(`(?i)s\d+|season\s+\d+`)
+		episodePattern := regexp.MustCompile(`(?i)e\d+|episode\s+\d+`)
+		
+		isSeries := seasonPattern.MatchString(torTitle) || episodePattern.MatchString(torTitle)
+		
+		if isSeries {
+			catPath = "torrSerials"
+			log.TLogln("Auto-detected as TV series (found season/episode pattern)")
+		} else {
+			catPath = "torrFilms"
+			log.TLogln("Auto-detected as movie (no season/episode pattern)")
+		}
 	}
 
-	log.TLogln("Content type detected:", catPath, "for:", torName)
+	log.TLogln("Final category path:", catPath, "for:", torName)
 
 	// Create full path
 	fullBasePath := filepath.Join(basePath, catPath, torName)
