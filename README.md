@@ -34,7 +34,7 @@ allowing the cache size to be adjusted according to the system parameters and th
 
 ## AI Documentation
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/YouROK/TorrServer)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Ernous/TorrServerJellyfin)
 
 ## Features
 
