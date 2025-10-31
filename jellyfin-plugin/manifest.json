@@ -12,7 +12,7 @@
         "changelog": "Initial release with full TorrServer API integration",
         "targetAbi": "10.9.0.0",
         "sourceUrl": "https://github.com/Ernous/TorrServerJellyfin/releases/download/plugin-v1.0.0/Jellyfin.Plugin.TorrServer.zip",
-        "checksum": "TO_BE_GENERATED",
+        "checksum": "70311330809ba5c19e4f5cb4292c4080",
         "timestamp": "2025-10-31T21:15:02Z"
       }
     ]
