@@ -33,12 +33,12 @@ jobs:
           mkdir -p ../../dist
           cp bin/Release/net8.0/Jellyfin.Plugin.TorrServer.dll ../../dist/
           cd ../../dist
-          zip Jellyfin.Plugin.TorrServer.zip Jellyfin.Plugin.TorrServer.dll
+          zip -j Jellyfin.Plugin.TorrServer.zip Jellyfin.Plugin.TorrServer.dll
 
       - name: Generate checksum
         working-directory: ./dist
         run: |
-          md5sum Jellyfin.Plugin.TorrServer.dll | awk '{print $1}' > checksum.txt
+          md5sum Jellyfin.Plugin.TorrServer.zip | awk '{print $1}' > checksum.txt
           cat checksum.txt
 
       - name: Upload artifacts
@@ -77,20 +77,37 @@ jobs:
           VERSION=${{ steps.get_version.outputs.VERSION }}
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           
-          # Update manifest.json with actual checksum
+          # Update manifest.json with actual checksum and version
           sed -i "s/TO_BE_GENERATED/$CHECKSUM/g" jellyfin-plugin/manifest.json
           sed -i "s/1.0.0/$VERSION/g" jellyfin-plugin/manifest.json
           sed -i "s/2025-10-31T20:00:00Z/$TIMESTAMP/g" jellyfin-plugin/manifest.json
+          
+          cat jellyfin-plugin/manifest.json
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            dist/Jellyfin.Plugin.TorrServer.dll
             dist/Jellyfin.Plugin.TorrServer.zip
             jellyfin-plugin/manifest.json
           draft: false
           prerelease: false
           generate_release_notes: true
+          body: |
+            ## Jellyfin TorrServer Plugin ${{ steps.get_version.outputs.VERSION }}
+            
+            ### Installation
+            1. Add repository in Jellyfin: Dashboard → Plugins → Repositories
+               - Name: `TorrServer`
+               - URL: `https://raw.githubusercontent.com/${{ github.repository }}/master/jellyfin-plugin/manifest.json`
+            2. Install from Catalog or download ZIP manually
+            3. Restart Jellyfin
+            
+            ### Features
+            - Manage torrents directly from Jellyfin
+            - TMDB integration for posters
+            - Auto-create .strm files
+            - Configure cache (RAM/Disk)
+            - Full TorrServer API access
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
