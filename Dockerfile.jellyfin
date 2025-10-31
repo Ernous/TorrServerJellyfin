@@ -32,7 +32,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Download TorrServer binary (pre-built from YOUR fork releases)
-ARG TORRSERVER_VERSION=latest
+ARG TORRSERVER_VERSION=v1.0.3
 RUN ARCH=$(dpkg --print-architecture) && \
     if [ "$ARCH" = "amd64" ]; then \
         TORRSERVER_ARCH="linux-amd64"; \
@@ -41,15 +41,12 @@ RUN ARCH=$(dpkg --print-architecture) && \
     else \
         TORRSERVER_ARCH="linux-amd64"; \
     fi && \
-    echo "Downloading TorrServer for architecture: $TORRSERVER_ARCH" && \
-    if [ "$TORRSERVER_VERSION" = "latest" ]; then \
-        wget -O /usr/bin/torrserver "https://github.com/Ernous/TorrServerJellyfin/releases/latest/download/TorrServer-${TORRSERVER_ARCH}"; \
-    else \
-        wget -O /usr/bin/torrserver "https://github.com/Ernous/TorrServerJellyfin/releases/download/${TORRSERVER_VERSION}/TorrServer-${TORRSERVER_ARCH}"; \
-    fi && \
+    echo "Downloading TorrServer for architecture: $TORRSERVER_ARCH from version: $TORRSERVER_VERSION" && \
+    wget --no-check-certificate -O /usr/bin/torrserver "https://github.com/Ernous/TorrServerJellyfin/releases/download/${TORRSERVER_VERSION}/TorrServer-${TORRSERVER_ARCH}" && \
     chmod +x /usr/bin/torrserver && \
-    /usr/bin/torrserver --version || echo "TorrServer binary ready" && \
-    ls -lah /usr/bin/torrserver
+    ls -lah /usr/bin/torrserver && \
+    file /usr/bin/torrserver && \
+    echo "TorrServer binary downloaded and made executable"
 
 # Create directories
 RUN mkdir -p /config/jellyfin \
