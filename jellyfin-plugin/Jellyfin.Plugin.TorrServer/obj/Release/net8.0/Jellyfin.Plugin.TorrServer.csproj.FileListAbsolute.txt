@@ -1,0 +1,13 @@
+C:\Users\Erno\Projects\TorrServerJellyfin\jellyfin-plugin\Jellyfin.Plugin.TorrServer\bin\Release\net8.0\Jellyfin.Plugin.TorrServer.deps.json
+C:\Users\Erno\Projects\TorrServerJellyfin\jellyfin-plugin\Jellyfin.Plugin.TorrServer\bin\Release\net8.0\Jellyfin.Plugin.TorrServer.dll
+C:\Users\Erno\Projects\TorrServerJellyfin\jellyfin-plugin\Jellyfin.Plugin.TorrServer\bin\Release\net8.0\Jellyfin.Plugin.TorrServer.pdb
+C:\Users\Erno\Projects\TorrServerJellyfin\jellyfin-plugin\Jellyfin.Plugin.TorrServer\obj\Release\net8.0\Jellyfin.Plugin.TorrServer.csproj.AssemblyReference.cache
+C:\Users\Erno\Projects\TorrServerJellyfin\jellyfin-plugin\Jellyfin.Plugin.TorrServer\obj\Release\net8.0\Jellyfin.Plugin.TorrServer.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Erno\Projects\TorrServerJellyfin\jellyfin-plugin\Jellyfin.Plugin.TorrServer\obj\Release\net8.0\Jellyfin.Plugin.TorrServer.AssemblyInfoInputs.cache
+C:\Users\Erno\Projects\TorrServerJellyfin\jellyfin-plugin\Jellyfin.Plugin.TorrServer\obj\Release\net8.0\Jellyfin.Plugin.TorrServer.AssemblyInfo.cs
+C:\Users\Erno\Projects\TorrServerJellyfin\jellyfin-plugin\Jellyfin.Plugin.TorrServer\obj\Release\net8.0\Jellyfin.Plugin.TorrServer.csproj.CoreCompileInputs.cache
+C:\Users\Erno\Projects\TorrServerJellyfin\jellyfin-plugin\Jellyfin.Plugin.TorrServer\obj\Release\net8.0\Jellyfin.Plugin.TorrServer.sourcelink.json
+C:\Users\Erno\Projects\TorrServerJellyfin\jellyfin-plugin\Jellyfin.Plugin.TorrServer\obj\Release\net8.0\Jellyfin.Plugin.TorrServer.dll
+C:\Users\Erno\Projects\TorrServerJellyfin\jellyfin-plugin\Jellyfin.Plugin.TorrServer\obj\Release\net8.0\refint\Jellyfin.Plugin.TorrServer.dll
+C:\Users\Erno\Projects\TorrServerJellyfin\jellyfin-plugin\Jellyfin.Plugin.TorrServer\obj\Release\net8.0\Jellyfin.Plugin.TorrServer.pdb
+C:\Users\Erno\Projects\TorrServerJellyfin\jellyfin-plugin\Jellyfin.Plugin.TorrServer\obj\Release\net8.0\ref\Jellyfin.Plugin.TorrServer.dll

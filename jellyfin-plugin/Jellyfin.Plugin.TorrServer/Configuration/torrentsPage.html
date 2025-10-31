@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>TorrServer - Manage Torrents</title>
+    <style>
+        .torrentCard {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        
+        .torrentPoster {
+            width: 100px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+        
+        .torrentInfo {
+            flex: 1;
+        }
+        
+        .torrentTitle {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .torrentStats {
+            display: flex;
+            gap: 16px;
+            margin-top: 8px;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        .torrentActions {
+            display: flex;
+            gap: 8px;
+            flex-direction: column;
+        }
+        
+        .progressBar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .progressFill {
+            height: 100%;
+            background: #00a4dc;
+            transition: width 0.3s;
+        }
+        
+        .addTorrentDialog {
+            max-width: 600px;
+        }
+        
+        .formSection {
+            margin-bottom: 24px;
+        }
+        
+        .posterGrid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+        
+        .posterOption {
+            cursor: pointer;
+            border: 3px solid transparent;
+            border-radius: 4px;
+            transition: border-color 0.2s;
+        }
+        
+        .posterOption:hover {
+            border-color: rgba(0, 164, 220, 0.5);
+        }
+        
+        .posterOption.selected {
+            border-color: #00a4dc;
+        }
+        
+        .posterOption img {
+            width: 100%;
+            height: 225px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        
+        .emptyState {
+            text-align: center;
+            padding: 48px;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+    <div id="TorrentsPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox">
+        <div data-role="content">
+            <div class="content-primary">
+                <div class="verticalSection">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h1>TorrServer - Manage Torrents</h1>
+                        <button is="emby-button" type="button" class="raised button-submit" id="btnAddTorrent">
+                            <span>Add Torrent</span>
+                        </button>
+                    </div>
+
+                    <div id="torrentsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Torrent Dialog -->
+    <div id="addTorrentDialog" class="dialog addTorrentDialog" style="display: none;">
+        <div class="dialog-content">
+            <h2>Add Torrent</h2>
+            
+            <form id="addTorrentForm">
+                <div class="formSection">
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="txtMagnetLink">Magnet Link or Torrent URL</label>
+                        <textarea is="emby-input" id="txtMagnetLink" rows="3" required></textarea>
+                    </div>
+                </div>
+
+                <div class="formSection">
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="txtTorrentTitle">Title (optional)</label>
+                        <input is="emby-input" type="text" id="txtTorrentTitle" />
+                        <button type="button" id="btnSearchTmdb" class="raised" style="margin-top: 8px;">
+                            Search TMDB
+                        </button>
+                    </div>
+                </div>
+
+                <div id="posterSection" class="formSection" style="display: none;">
+                    <label class="inputLabel">Select Poster</label>
+                    <div id="posterGrid" class="posterGrid"></div>
+                </div>
+
+                <div class="formSection">
+                    <div class="selectContainer">
+                        <label class="selectLabel" for="selectCategory">Category</label>
+                        <select is="emby-select" id="selectCategory" class="emby-select">
+                            <option value="Movies">Movies</option>
+                            <option value="TV">TV Shows</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="formSection">
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="txtStrmDir">Custom .strm Directory (optional)</label>
+                        <input is="emby-input" type="text" id="txtStrmDir" placeholder="Leave empty for default" />
+                        <div class="fieldDescription">
+                            Custom subdirectory for .strm files. Leave empty to use torrent name.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="formSection">
+                    <div class="checkboxContainer">
+                        <label>
+                            <input is="emby-checkbox" type="checkbox" id="chkCreateStrm" checked />
+                            <span>Create .strm files</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                    <button is="emby-button" type="button" class="raised" id="btnCancelAdd">
+                        <span>Cancel</span>
+                    </button>
+                    <button is="emby-button" type="submit" class="raised button-submit">
+                        <span>Add Torrent</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var TorrServerManager = {
+            selectedPoster: null,
+            
+            init: function() {
+                this.loadTorrents();
+                this.setupEventListeners();
+                
+                // Auto-refresh every 5 seconds
+                setInterval(() => this.loadTorrents(), 5000);
+            },
+            
+            setupEventListeners: function() {
+                document.getElementById('btnAddTorrent').addEventListener('click', () => {
+                    document.getElementById('addTorrentDialog').style.display = 'block';
+                });
+                
+                document.getElementById('btnCancelAdd').addEventListener('click', () => {
+                    document.getElementById('addTorrentDialog').style.display = 'none';
+                    this.resetAddForm();
+                });
+                
+                document.getElementById('btnSearchTmdb').addEventListener('click', () => {
+                    this.searchTmdb();
+                });
+                
+                document.getElementById('addTorrentForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.addTorrent();
+                });
+            },
+            
+            loadTorrents: function() {
+                fetch('/TorrServer/torrents', {
+                    headers: {
+                        'X-Emby-Token': ApiClient.accessToken()
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    this.renderTorrents(data);
+                })
+                .catch(error => {
+                    console.error('Error loading torrents:', error);
+                });
+            },
+            
+            renderTorrents: function(torrents) {
+                const container = document.getElementById('torrentsList');
+                
+                if (!torrents || torrents.length === 0) {
+                    container.innerHTML = `
+                        <div class="emptyState">
+                            <h2>No active torrents</h2>
+                            <p>Click "Add Torrent" to get started</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = torrents.map(torrent => `
+                    <div class="torrentCard">
+                        ${torrent.poster ? `<img src="${torrent.poster}" class="torrentPoster" alt="${torrent.title}">` : ''}
+                        <div class="torrentInfo">
+                            <div class="torrentTitle">${torrent.title || torrent.name}</div>
+                            <div class="torrentStats">
+                                <span>📊 ${this.formatBytes(torrent.stat?.total_bytes || 0)}</span>
+                                <span>⬇️ ${this.formatBytes(torrent.stat?.download_speed || 0)}/s</span>
+                                <span>⬆️ ${this.formatBytes(torrent.stat?.upload_speed || 0)}/s</span>
+                                <span>👥 ${torrent.stat?.peers || 0} peers</span>
+                            </div>
+                            <div class="progressBar">
+                                <div class="progressFill" style="width: ${torrent.stat?.progress || 0}%"></div>
+                            </div>
+                        </div>
+                        <div class="torrentActions">
+                            <button is="emby-button" class="raised button-submit" onclick="TorrServerManager.playTorrent('${torrent.hash}')">
+                                <span>▶️ Play</span>
+                            </button>
+                            <button is="emby-button" class="raised" onclick="TorrServerManager.removeTorrent('${torrent.hash}')">
+                                <span>🗑️ Remove</span>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            },
+            
+            searchTmdb: function() {
+                const query = document.getElementById('txtTorrentTitle').value;
+                if (!query) {
+                    Dashboard.alert('Please enter a title to search');
+                    return;
+                }
+                
+                Dashboard.showLoadingMsg();
+                
+                fetch('/TorrServer/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Emby-Token': ApiClient.accessToken()
+                    },
+                    body: JSON.stringify({
+                        Query: query,
+                        Language: 'en',
+                        Type: 'multi'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    Dashboard.hideLoadingMsg();
+                    if (data.success && data.posters && data.posters.length > 0) {
+                        this.showPosterSelection(data.posters);
+                    } else {
+                        Dashboard.alert('No results found');
+                    }
+                })
+                .catch(error => {
+                    Dashboard.hideLoadingMsg();
+                    console.error('Error searching TMDB:', error);
+                    Dashboard.alert('Error searching TMDB');
+                });
+            },
+            
+            showPosterSelection: function(posters) {
+                const grid = document.getElementById('posterGrid');
+                const section = document.getElementById('posterSection');
+                
+                grid.innerHTML = posters.map((poster, index) => `
+                    <div class="posterOption" data-url="${poster}" onclick="TorrServerManager.selectPoster('${poster}', ${index})">
+                        <img src="${poster}" alt="Poster ${index + 1}">
+                    </div>
+                `).join('');
+                
+                section.style.display = 'block';
+            },
+            
+            selectPoster: function(url, index) {
+                this.selectedPoster = url;
+                
+                // Remove selected class from all
+                document.querySelectorAll('.posterOption').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                
+                // Add to clicked
+                document.querySelectorAll('.posterOption')[index].classList.add('selected');
+            },
+            
+            addTorrent: function() {
+                const magnetLink = document.getElementById('txtMagnetLink').value;
+                const title = document.getElementById('txtTorrentTitle').value;
+                const category = document.getElementById('selectCategory').value;
+                const strmDir = document.getElementById('txtStrmDir').value;
+                const createStrm = document.getElementById('chkCreateStrm').checked;
+                
+                if (!magnetLink) {
+                    Dashboard.alert('Please enter a magnet link');
+                    return;
+                }
+                
+                Dashboard.showLoadingMsg();
+                
+                fetch('/TorrServer/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Emby-Token': ApiClient.accessToken()
+                    },
+                    body: JSON.stringify({
+                        Link: magnetLink,
+                        Title: title,
+                        Poster: this.selectedPoster || '',
+                        Category: category,
+                        StrmDir: strmDir,
+                        CreateStrm: createStrm
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    Dashboard.hideLoadingMsg();
+                    document.getElementById('addTorrentDialog').style.display = 'none';
+                    this.resetAddForm();
+                    this.loadTorrents();
+                    Dashboard.alert('Torrent added successfully!');
+                })
+                .catch(error => {
+                    Dashboard.hideLoadingMsg();
+                    console.error('Error adding torrent:', error);
+                    Dashboard.alert('Error adding torrent');
+                });
+            },
+            
+            removeTorrent: function(hash) {
+                if (!confirm('Are you sure you want to remove this torrent?')) {
+                    return;
+                }
+                
+                Dashboard.showLoadingMsg();
+                
+                fetch('/TorrServer/remove', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Emby-Token': ApiClient.accessToken()
+                    },
+                    body: JSON.stringify({ Hash: hash })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    Dashboard.hideLoadingMsg();
+                    this.loadTorrents();
+                    Dashboard.alert('Torrent removed successfully!');
+                })
+                .catch(error => {
+                    Dashboard.hideLoadingMsg();
+                    console.error('Error removing torrent:', error);
+                    Dashboard.alert('Error removing torrent');
+                });
+            },
+            
+            playTorrent: function(hash) {
+                // TODO: Implement play functionality
+                Dashboard.alert('Play functionality coming soon!');
+            },
+            
+            resetAddForm: function() {
+                document.getElementById('txtMagnetLink').value = '';
+                document.getElementById('txtTorrentTitle').value = '';
+                document.getElementById('txtStrmDir').value = '';
+                document.getElementById('chkCreateStrm').checked = true;
+                document.getElementById('posterSection').style.display = 'none';
+                this.selectedPoster = null;
+            },
+            
+            formatBytes: function(bytes) {
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        };
+        
+        document.getElementById('TorrentsPage').addEventListener('pageshow', function () {
+            TorrServerManager.init();
+        });
+    </script>
+</body>
+</html>

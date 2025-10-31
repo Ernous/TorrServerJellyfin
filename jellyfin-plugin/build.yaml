@@ -1,0 +1,14 @@
+---
+name: "Jellyfin.Plugin.TorrServer"
+guid: "a8b12c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d"
+version: "1.0.0"
+targetAbi: "10.9.0.0"
+framework: "net8.0"
+owner: "Ernous"
+overview: "TorrServer integration for Jellyfin"
+description: "Manage torrents directly from Jellyfin with TorrServer integration. Add torrents, configure cache, auto-create .strm files, and more."
+category: "General"
+artifacts:
+  - "Jellyfin.Plugin.TorrServer.dll"
+build_type: "dotnet"
+dotnet_configuration: "Release"
