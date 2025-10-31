@@ -1,5 +1,5 @@
 ### FRONT BUILD START ###
-FROM --platform=$BUILDPLATFORM node:16-alpine AS front
+FROM --platform=$BUILDPLATFORM node:18-alpine AS front
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ RUN yarn run build
 
 
 ### BUILD TORRSERVER START ###
-FROM --platform=$BUILDPLATFORM golang:1.24.0-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS builder
 
 COPY . /opt/src
 COPY --from=front /app/build /opt/src/web/build

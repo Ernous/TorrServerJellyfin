@@ -6,7 +6,7 @@ services:
       - fra
     env:
       - key: JELLYFIN_PublishedServerUrl
-        value: https://YOUR_APP_NAME.koyeb.app
+        value: https://erno-media.koyeb.app
       - key: TS_PORT
         value: "8090"
       - key: TS_CONF_PATH
