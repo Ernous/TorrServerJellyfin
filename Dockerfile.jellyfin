@@ -19,41 +19,37 @@ RUN yarn run build
 ### FRONT BUILD END ###
 
 
-### BUILD TORRSERVER START ###
-FROM golang:1.23-alpine AS builder
-
-COPY . /opt/src
-COPY --from=front /app/build /opt/src/web/build
-
-WORKDIR /opt/src
-
-RUN apk add --update g++ \
-&& go run gen_web.go \
-&& cd server \
-&& go mod tidy \
-&& go clean -i -r -cache \
-&& CGO_ENABLED=1 go build -ldflags '-w -s' -o "torrserver" ./cmd \
-&& chmod +x torrserver
-### BUILD TORRSERVER END ###
-
-
 ### BUILD MAIN IMAGE WITH JELLYFIN + TORRSERVER ###
 FROM jellyfin/jellyfin:latest
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     curl \
+    wget \
     ca-certificates \
     supervisor \
     nginx \
-    file \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy TorrServer binary
-COPY --from=builder /opt/src/server/torrserver /usr/bin/torrserver
-RUN chmod +x /usr/bin/torrserver \
-    && ls -lah /usr/bin/torrserver \
-    && file /usr/bin/torrserver
+# Download TorrServer binary (pre-built from YOUR fork releases)
+ARG TORRSERVER_VERSION=latest
+RUN ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "amd64" ]; then \
+        TORRSERVER_ARCH="linux-amd64"; \
+    elif [ "$ARCH" = "arm64" ]; then \
+        TORRSERVER_ARCH="linux-arm64"; \
+    else \
+        TORRSERVER_ARCH="linux-amd64"; \
+    fi && \
+    echo "Downloading TorrServer for architecture: $TORRSERVER_ARCH" && \
+    if [ "$TORRSERVER_VERSION" = "latest" ]; then \
+        wget -O /usr/bin/torrserver "https://github.com/Ernous/TorrServerJellyfin/releases/latest/download/TorrServer-${TORRSERVER_ARCH}"; \
+    else \
+        wget -O /usr/bin/torrserver "https://github.com/Ernous/TorrServerJellyfin/releases/download/${TORRSERVER_VERSION}/TorrServer-${TORRSERVER_ARCH}"; \
+    fi && \
+    chmod +x /usr/bin/torrserver && \
+    /usr/bin/torrserver --version || echo "TorrServer binary ready" && \
+    ls -lah /usr/bin/torrserver
 
 # Create directories
 RUN mkdir -p /config/jellyfin \

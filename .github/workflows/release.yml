@@ -1,0 +1,98 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build TorrServer
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            output: TorrServer-linux-amd64
+          - goos: linux
+            goarch: arm64
+            output: TorrServer-linux-arm64
+          - goos: windows
+            goarch: amd64
+            output: TorrServer-windows-amd64.exe
+          - goos: darwin
+            goarch: amd64
+            output: TorrServer-darwin-amd64
+          - goos: darwin
+            goarch: arm64
+            output: TorrServer-darwin-arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Build Frontend
+        working-directory: ./web
+        run: |
+          yarn install
+          yarn build
+
+      - name: Generate Web Assets
+        run: go run gen_web.go
+
+      - name: Build TorrServer Binary
+        working-directory: ./server
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          go mod tidy
+          go build -ldflags="-w -s" -o ${{ matrix.output }} ./cmd
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.output }}
+          path: ./server/${{ matrix.output }}
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./binaries
+
+      - name: Display structure
+        run: ls -R ./binaries
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./binaries/**/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
