@@ -265,7 +265,7 @@ export default function SecondarySettingsComponent({ settings, inputForm }) {
       <br />
 
       <SettingSectionLabel>Jellyfin & TMDB Integration</SettingSectionLabel>
-      
+
       <TextField
         onChange={inputForm}
         margin='normal'
