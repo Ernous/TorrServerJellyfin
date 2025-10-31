@@ -14,9 +14,13 @@ services:
     ports:
       - port: 8096
         protocol: http
+      - port: 8090
+        protocol: http
     routes:
       - path: /
         port: 8096
+      - path: /torrserver
+        port: 8090
     build:
       dockerfile: Dockerfile.jellyfin
       context: .
