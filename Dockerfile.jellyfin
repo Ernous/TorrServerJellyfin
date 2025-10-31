@@ -20,22 +20,20 @@ RUN yarn run build
 
 
 ### BUILD TORRSERVER START ###
-FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 COPY . /opt/src
 COPY --from=front /app/build /opt/src/web/build
 
 WORKDIR /opt/src
 
-ARG TARGETARCH
-ENV GOARCH=$TARGETARCH
-
 RUN apk add --update g++ \
 && go run gen_web.go \
 && cd server \
 && go mod tidy \
 && go clean -i -r -cache \
-&& go build -ldflags '-w -s' -o "torrserver" ./cmd
+&& CGO_ENABLED=1 go build -ldflags '-w -s' -o "torrserver" ./cmd \
+&& chmod +x torrserver
 ### BUILD TORRSERVER END ###
 
 
@@ -48,11 +46,14 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     supervisor \
     nginx \
+    file \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy TorrServer binary
 COPY --from=builder /opt/src/server/torrserver /usr/bin/torrserver
-RUN chmod +x /usr/bin/torrserver
+RUN chmod +x /usr/bin/torrserver \
+    && ls -lah /usr/bin/torrserver \
+    && file /usr/bin/torrserver
 
 # Create directories
 RUN mkdir -p /config/jellyfin \
