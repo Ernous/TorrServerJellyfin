@@ -1,0 +1,96 @@
+name: Build Jellyfin Plugin
+
+on:
+  push:
+    tags:
+      - 'plugin-v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        working-directory: ./jellyfin-plugin/Jellyfin.Plugin.TorrServer
+        run: dotnet restore
+
+      - name: Build plugin
+        working-directory: ./jellyfin-plugin/Jellyfin.Plugin.TorrServer
+        run: dotnet build -c Release --no-restore
+
+      - name: Create plugin package
+        working-directory: ./jellyfin-plugin/Jellyfin.Plugin.TorrServer
+        run: |
+          mkdir -p ../../dist
+          cp bin/Release/net8.0/Jellyfin.Plugin.TorrServer.dll ../../dist/
+          cd ../../dist
+          zip Jellyfin.Plugin.TorrServer.zip Jellyfin.Plugin.TorrServer.dll
+
+      - name: Generate checksum
+        working-directory: ./dist
+        run: |
+          md5sum Jellyfin.Plugin.TorrServer.dll | awk '{print $1}' > checksum.txt
+          cat checksum.txt
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Jellyfin.Plugin.TorrServer
+          path: |
+            dist/Jellyfin.Plugin.TorrServer.dll
+            dist/Jellyfin.Plugin.TorrServer.zip
+            dist/checksum.txt
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/plugin-v')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: Jellyfin.Plugin.TorrServer
+          path: ./dist
+
+      - name: Get version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/plugin-v}" >> $GITHUB_OUTPUT
+
+      - name: Update manifest
+        run: |
+          CHECKSUM=$(cat dist/checksum.txt)
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          # Update manifest.json with actual checksum
+          sed -i "s/TO_BE_GENERATED/$CHECKSUM/g" jellyfin-plugin/manifest.json
+          sed -i "s/1.0.0/$VERSION/g" jellyfin-plugin/manifest.json
+          sed -i "s/2025-10-31T20:00:00Z/$TIMESTAMP/g" jellyfin-plugin/manifest.json
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/Jellyfin.Plugin.TorrServer.dll
+            dist/Jellyfin.Plugin.TorrServer.zip
+            jellyfin-plugin/manifest.json
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
