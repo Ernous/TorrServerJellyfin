@@ -12,11 +12,16 @@ services:
       - key: TS_CONF_PATH
         value: /config/torrserver
     ports:
-      - port: 8096
+      - port: 8080
         protocol: http
-      - port: 8090
+    health_checks:
+      - port: 8080
         protocol: http
-        path: /torrserver
+        path: /
+        grace_period: 60
+        interval: 10
+        restart_limit: 3
+        timeout: 10
     build:
       dockerfile: Dockerfile.jellyfin
       context: .
