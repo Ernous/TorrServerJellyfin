@@ -83,6 +83,14 @@ jobs:
           sed -i "s/2025-10-31T20:00:00Z/$TIMESTAMP/g" jellyfin-plugin/manifest.json
           
           cat jellyfin-plugin/manifest.json
+      
+      - name: Commit updated manifest
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add jellyfin-plugin/manifest.json
+          git commit -m "Update manifest.json with checksum for ${{ steps.get_version.outputs.VERSION }}" || echo "No changes to commit"
+          git push || echo "Nothing to push"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
