@@ -45,7 +45,6 @@ RUN ARCH=$(dpkg --print-architecture) && \
     wget --no-check-certificate -O /usr/bin/torrserver "https://github.com/Ernous/TorrServerJellyfin/releases/download/${TORRSERVER_VERSION}/TorrServer-${TORRSERVER_ARCH}" && \
     chmod +x /usr/bin/torrserver && \
     ls -lah /usr/bin/torrserver && \
-    file /usr/bin/torrserver && \
     echo "TorrServer binary downloaded and made executable"
 
 # Create directories
