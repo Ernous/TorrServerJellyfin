@@ -24,7 +24,7 @@ func addTorrent(c tele.Context, link string) error {
 		return err
 	}
 
-	tor, err := torr.AddTorrent(torrSpec, "", "", "", "")
+	tor, err := torr.AddTorrent(torrSpec, "", "", "", "", "")
 
 	if tor.Data != "" && set.BTsets.EnableDebug {
 		log.TLogln("torrent data:", tor.Data)

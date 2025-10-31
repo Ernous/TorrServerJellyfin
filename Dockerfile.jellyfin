@@ -1,0 +1,82 @@
+### FRONT BUILD START ###
+FROM --platform=$BUILDPLATFORM node:16-alpine AS front
+
+WORKDIR /app
+
+ARG REACT_APP_SERVER_HOST='.'
+ARG REACT_APP_TMDB_API_KEY=''
+ARG PUBLIC_URL=''
+
+ENV REACT_APP_SERVER_HOST=$REACT_APP_SERVER_HOST
+ENV REACT_APP_TMDB_API_KEY=$REACT_APP_TMDB_API_KEY
+ENV PUBLIC_URL=$PUBLIC_URL
+
+COPY ./web/package.json ./web/yarn.lock ./
+RUN yarn install
+
+COPY ./web .
+RUN yarn run build
+### FRONT BUILD END ###
+
+
+### BUILD TORRSERVER START ###
+FROM --platform=$BUILDPLATFORM golang:1.24.0-alpine AS builder
+
+COPY . /opt/src
+COPY --from=front /app/build /opt/src/web/build
+
+WORKDIR /opt/src
+
+ARG TARGETARCH
+ENV GOARCH=$TARGETARCH
+
+RUN apk add --update g++ \
+&& go run gen_web.go \
+&& cd server \
+&& go mod tidy \
+&& go clean -i -r -cache \
+&& go build -ldflags '-w -s' -o "torrserver" ./cmd
+### BUILD TORRSERVER END ###
+
+
+### BUILD MAIN IMAGE WITH JELLYFIN + TORRSERVER ###
+FROM jellyfin/jellyfin:latest
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    ca-certificates \
+    supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy TorrServer binary
+COPY --from=builder /opt/src/server/torrserver /usr/bin/torrserver
+RUN chmod +x /usr/bin/torrserver
+
+# Create directories
+RUN mkdir -p /config/jellyfin \
+    /config/torrserver \
+    /cache/jellyfin \
+    /cache/torrserver \
+    /media/strm \
+    /var/log/supervisor
+
+# Copy supervisor configuration
+COPY ./docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Copy startup script
+COPY ./docker/start.sh /start.sh
+RUN chmod +x /start.sh
+
+# Environment variables
+ENV JELLYFIN_PublishedServerUrl=http://localhost:8096
+ENV TS_CONF_PATH="/config/torrserver"
+ENV TS_PORT=8090
+ENV GODEBUG=madvdontneed=1
+
+# Expose ports
+# 8096 - Jellyfin HTTP
+# 8090 - TorrServer
+EXPOSE 8096 8090
+
+CMD ["/start.sh"]

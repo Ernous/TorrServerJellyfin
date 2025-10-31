@@ -24,6 +24,8 @@ type Torrent struct {
 	Category string
 	Poster   string
 	Data     string
+	StrmDir  string // Custom directory for .strm files (Jellyfin integration)
+	StrmPath string // Full path where .strm files are stored
 	*torrent.TorrentSpec
 
 	Stat      state.TorrentStat

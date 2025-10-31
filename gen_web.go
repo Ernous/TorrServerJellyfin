@@ -28,14 +28,22 @@ func main() {
 	compileHtml := "web/build/"
 	srcGo := "server/web/pages/"
 
-	run("rm", "-rf", srcGo+"template/pages")
-	run("cp", "-r", compileHtml, srcGo+"template/pages")
+	// Remove old pages directory
+	os.RemoveAll(srcGo + "template/pages")
+	// Copy build directory to pages
+	if err := copyDir(compileHtml, srcGo+"template/pages"); err != nil {
+		fmt.Println("Error copying build directory:", err)
+		os.Exit(1)
+	}
 
 	files := make([]string, 0)
 
 	filepath.WalkDir(srcGo+"template/pages/", func(path string, d fs.DirEntry, err error) error {
 		if !d.IsDir() {
-			name := strings.TrimPrefix(path, srcGo+"template/")
+			// Normalize path separators for cross-platform compatibility
+			path = filepath.ToSlash(path)
+			prefix := filepath.ToSlash(srcGo + "template/")
+			name := strings.TrimPrefix(path, prefix)
 			if !strings.HasPrefix(filepath.Base(name), ".") {
 				files = append(files, name)
 			}
@@ -139,4 +147,30 @@ func cleanName(fn string) string {
 		os.Exit(1)
 	}
 	return strings.Title(reg.ReplaceAllString(fn, ""))
+}
+
+func copyDir(src, dst string) error {
+	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		
+		relPath, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		
+		dstPath := filepath.Join(dst, relPath)
+		
+		if d.IsDir() {
+			return os.MkdirAll(dstPath, 0755)
+		}
+		
+		srcFile, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		
+		return os.WriteFile(dstPath, srcFile, 0644)
+	})
 }

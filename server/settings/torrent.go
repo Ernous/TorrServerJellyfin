@@ -16,6 +16,8 @@ type TorrentDB struct {
 	Category string `json:"category,omitempty"`
 	Poster   string `json:"poster,omitempty"`
 	Data     string `json:"data,omitempty"`
+	StrmDir  string `json:"strm_dir,omitempty"`  // Custom directory for .strm files
+	StrmPath string `json:"strm_path,omitempty"` // Full path where .strm files are stored
 
 	Timestamp int64 `json:"timestamp,omitempty"`
 	Size      int64 `json:"size,omitempty"`

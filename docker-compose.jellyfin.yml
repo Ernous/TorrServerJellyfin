@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  jellyfin-torrserver:
+    build:
+      context: .
+      dockerfile: Dockerfile.jellyfin
+    container_name: jellyfin-torrserver
+    ports:
+      - "8096:8096"  # Jellyfin
+      - "8090:8090"  # TorrServer
+    environment:
+      - JELLYFIN_PublishedServerUrl=http://localhost:8096
+      - TS_PORT=8090
+      - TS_CONF_PATH=/config/torrserver
+      - GODEBUG=madvdontneed=1
+    volumes:
+      - jellyfin_config:/config/jellyfin
+      - torrserver_config:/config/torrserver
+      - jellyfin_cache:/cache/jellyfin
+      - torrserver_cache:/cache/torrserver
+      - strm_files:/media/strm
+    restart: unless-stopped
+    networks:
+      - media
+
+networks:
+  media:
+    driver: bridge
+
+volumes:
+  jellyfin_config:
+  torrserver_config:
+  jellyfin_cache:
+  torrserver_cache:
+  strm_files:

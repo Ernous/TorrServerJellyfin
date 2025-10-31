@@ -27,4 +27,8 @@ export default {
   SslPort: 0,
   SslCert: '',
   SslKey: '',
+  TMDBApiKey: '',
+  JlfnAddr: '',
+  JlfnAutoCreate: false,
+  TorrServerHost: '',
 }

@@ -29,6 +29,7 @@ import { checkImageURL } from './helpers'
 export default function RightSideComponent({
   setTitle,
   setCategory,
+  setStrmDir,
   setPosterUrl,
   setIsPosterUrlCorrect,
   setIsUserInteractedWithPoster,
@@ -37,6 +38,7 @@ export default function RightSideComponent({
   isHashAlreadyExists,
   title,
   category,
+  strmDir,
   parsedTitle,
   posterUrl,
   isPosterUrlCorrect,
@@ -58,6 +60,7 @@ export default function RightSideComponent({
 
   const handleTitleChange = ({ target: { value } }) => setTitle(value)
   const handleCategoryChange = ({ target: { value } }) => setCategory(value)
+  const handleStrmDirChange = ({ target: { value } }) => setStrmDir(value)
   const handlePosterUrlChange = ({ target: { value } }) => {
     setPosterUrl(value)
     checkImageURL(value).then(setIsPosterUrlCorrect)
@@ -186,6 +189,18 @@ export default function RightSideComponent({
             ))}
           </Select>
         </FormControl>
+
+        <TextField
+          onChange={handleStrmDirChange}
+          value={strmDir}
+          margin='dense'
+          label='Custom .strm Directory'
+          type='text'
+          variant='outlined'
+          fullWidth
+          helperText='Optional: Custom folder name for .strm files (between category and torrent folders)'
+          placeholder='e.g., Movies2024 or TVShows/Season1'
+        />
 
         <PosterWrapper>
           <Poster poster={+isPosterUrlCorrect}>

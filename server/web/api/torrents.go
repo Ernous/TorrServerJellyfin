@@ -32,6 +32,7 @@ type torrReqJS struct {
 	Category string `json:"category,omitempty"`
 	Poster   string `json:"poster,omitempty"`
 	Data     string `json:"data,omitempty"`
+	StrmDir  string `json:"strm_dir,omitempty"`  // Custom directory for .strm files
 	SaveToDB bool   `json:"save_to_db,omitempty"`
 }
 
@@ -114,7 +115,7 @@ func addTorrent(req torrReqJS, c *gin.Context) {
 		}
 	}
 
-	tor, err := torr.AddTorrent(torrSpec, req.Title, req.Poster, req.Data, req.Category)
+	tor, err := torr.AddTorrent(torrSpec, req.Title, req.Poster, req.Data, req.Category, req.StrmDir)
 	// if tor.Data != "" && set.BTsets.EnableDebug {
 	// 	log.TLogln("torrent data:", tor.Data)
 	// }
@@ -190,6 +191,13 @@ func remTorrent(req torrReqJS, c *gin.Context) {
 		c.AbortWithError(http.StatusBadRequest, errors.New("hash is empty"))
 		return
 	}
+	
+	// Get torrent info before removing for .strm cleanup
+	tor := torr.GetTorrent(req.Hash)
+	if tor != nil && set.BTsets.JlfnAddr != "" {
+		removeStrmFilesForTorrent(tor)
+	}
+	
 	torr.RemTorrent(req.Hash)
 	// TODO: remove
 	if set.BTsets.EnableDLNA {
@@ -275,6 +283,12 @@ func createStrmFilesForTorrent(tor *torr.Torrent, c *gin.Context) {
 		}
 	}
 
+	// Check if torrent's underlying Torrent object is valid
+	if tor.Torrent == nil {
+		log.TLogln("Torrent object is nil, cannot create .strm files")
+		return
+	}
+
 	// Get host for stream URLs
 	// Use configured TorrServerHost if available, otherwise use request host
 	host := set.BTsets.TorrServerHost
@@ -321,8 +335,15 @@ func createStrmFilesForTorrent(tor *torr.Torrent, c *gin.Context) {
 
 	log.TLogln("Final category path:", catPath, "for:", torName)
 
-	// Create full path
-	fullBasePath := filepath.Join(basePath, catPath, torName)
+	// Create full path: basePath/category/custom_dir/torrent_name
+	// If custom directory is specified, use it between category and torrent name
+	var fullBasePath string
+	if tor.StrmDir != "" {
+		fullBasePath = filepath.Join(basePath, catPath, tor.StrmDir, torName)
+		log.TLogln("Using custom directory:", tor.StrmDir)
+	} else {
+		fullBasePath = filepath.Join(basePath, catPath, torName)
+	}
 	log.TLogln("Creating .strm files in:", fullBasePath)
 
 	// Create .strm files for each video file
@@ -368,6 +389,105 @@ func createStrmFilesForTorrent(tor *torr.Torrent, c *gin.Context) {
 	}
 
 	log.TLogln("Finished creating .strm files for:", torrents.Hash)
+
+	// Save the path to database
+	tor.StrmPath = fullBasePath
+	torr.SaveTorrentToDB(tor)
+	log.TLogln("Saved .strm path to DB:", fullBasePath)
+}
+
+// removeStrmFilesForTorrent removes .strm files and directories for a torrent
+func removeStrmFilesForTorrent(tor *torr.Torrent) {
+	// Use saved path if available
+	if tor.StrmPath != "" {
+		log.TLogln("Removing .strm files from saved path:", tor.StrmPath)
+		
+		// Remove torrent directory
+		if err := os.RemoveAll(tor.StrmPath); err != nil {
+			log.TLogln("Error removing torrent directory:", err)
+		} else {
+			log.TLogln("Removed torrent directory:", tor.StrmPath)
+		}
+
+		// Try to remove parent custom directory if empty
+		parentDir := filepath.Dir(tor.StrmPath)
+		basePath := set.BTsets.JlfnAddr
+		if basePath != "" {
+			// Don't remove if it's a category folder (torrSerials/torrFilms)
+			if !strings.HasSuffix(parentDir, "torrSerials") && !strings.HasSuffix(parentDir, "torrFilms") {
+				entries, err := os.ReadDir(parentDir)
+				if err == nil && len(entries) == 0 {
+					if err := os.Remove(parentDir); err != nil {
+						log.TLogln("Error removing parent directory:", err)
+					} else {
+						log.TLogln("Removed empty parent directory:", parentDir)
+					}
+				}
+			}
+		}
+		return
+	}
+
+	// Fallback: calculate path from torrent data
+	basePath := set.BTsets.JlfnAddr
+	if basePath == "" {
+		return
+	}
+
+	torName := tor.Name()
+	log.TLogln("Removing .strm files for:", torName, "(no saved path, calculating)")
+
+	// Determine category (same logic as in createStrmFilesForTorrent)
+	catPath := ""
+	torCategory := strings.ToLower(tor.Category)
+	
+	switch torCategory {
+	case "сериалы", "серіали", "serials", "series", "tv", "tv shows":
+		catPath = "torrSerials"
+	case "фильмы", "фільми", "movies", "films":
+		catPath = "torrFilms"
+	default:
+		// Auto-detect
+		torTitle := strings.ToLower(torName)
+		seasonPattern := regexp.MustCompile(`(?i)s\d+|season\s+\d+`)
+		episodePattern := regexp.MustCompile(`(?i)e\d+|episode\s+\d+`)
+		
+		isSeries := seasonPattern.MatchString(torTitle) || episodePattern.MatchString(torTitle)
+		
+		if isSeries {
+			catPath = "torrSerials"
+		} else {
+			catPath = "torrFilms"
+		}
+	}
+
+	// Build path to torrent directory
+	var torrentDirPath string
+	if tor.StrmDir != "" {
+		torrentDirPath = filepath.Join(basePath, catPath, tor.StrmDir, torName)
+	} else {
+		torrentDirPath = filepath.Join(basePath, catPath, torName)
+	}
+
+	// Remove torrent directory
+	if err := os.RemoveAll(torrentDirPath); err != nil {
+		log.TLogln("Error removing torrent directory:", err)
+	} else {
+		log.TLogln("Removed torrent directory:", torrentDirPath)
+	}
+
+	// If custom directory was used, try to remove it if empty
+	if tor.StrmDir != "" {
+		customDirPath := filepath.Join(basePath, catPath, tor.StrmDir)
+		entries, err := os.ReadDir(customDirPath)
+		if err == nil && len(entries) == 0 {
+			if err := os.Remove(customDirPath); err != nil {
+				log.TLogln("Error removing custom directory:", err)
+			} else {
+				log.TLogln("Removed empty custom directory:", customDirPath)
+			}
+		}
+	}
 }
 
 func addJlfn(req torrReqJS, c *gin.Context) {

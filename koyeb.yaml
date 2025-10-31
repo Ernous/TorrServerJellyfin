@@ -1,0 +1,29 @@
+services:
+  - name: jellyfin-torrserver
+    type: web
+    instance_type: nano
+    regions:
+      - fra
+    env:
+      - key: JELLYFIN_PublishedServerUrl
+        value: https://YOUR_APP_NAME.koyeb.app
+      - key: TS_PORT
+        value: "8090"
+      - key: TS_CONF_PATH
+        value: /config/torrserver
+    ports:
+      - port: 8096
+        protocol: http
+    routes:
+      - path: /
+        port: 8096
+    build:
+      dockerfile: Dockerfile.jellyfin
+      context: .
+    volumes:
+      - path: /config
+        size: 1
+      - path: /cache
+        size: 5
+      - path: /media
+        size: 2
