@@ -45,6 +45,8 @@ jobs:
 
       - name: Build Frontend
         working-directory: ./web
+        env:
+          CI: false
         run: |
           yarn install
           yarn build

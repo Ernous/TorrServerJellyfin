@@ -278,7 +278,7 @@ export default function SecondarySettingsComponent({ settings, inputForm }) {
         fullWidth
       />
       <br />
-      
+
       <TextField
         onChange={inputForm}
         margin='normal'
@@ -304,7 +304,6 @@ export default function SecondarySettingsComponent({ settings, inputForm }) {
         fullWidth
       />
       <br />
-
       <FormGroup>
         <FormControlLabel
           control={<Switch checked={JlfnAutoCreate} onChange={inputForm} id='JlfnAutoCreate' color='secondary' />}
@@ -316,7 +315,6 @@ export default function SecondarySettingsComponent({ settings, inputForm }) {
         </FormHelperText>
       </FormGroup>
       <br />
-
     </SecondarySettingsContent>
   )
 }
