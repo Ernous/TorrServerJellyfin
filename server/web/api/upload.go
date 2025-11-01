@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"server/log"
@@ -55,6 +56,14 @@ func torrentUpload(c *gin.Context) {
 	if len(form.Value["data"]) > 0 {
 		data = form.Value["data"][0]
 	}
+	var selectedFiles []int
+	if len(form.Value["selected_files"]) > 0 {
+		// Parse JSON array of selected file IDs
+		var files []int
+		if err := json.Unmarshal([]byte(form.Value["selected_files"][0]), &files); err == nil {
+			selectedFiles = files
+		}
+	}
 	var tor *torr.Torrent
 	for name, file := range form.File {
 		log.TLogln("add .torrent", name)
@@ -72,7 +81,7 @@ func torrentUpload(c *gin.Context) {
 			continue
 		}
 
-		tor, err = torr.AddTorrent(spec, title, poster, data, category, "")
+		tor, err = torr.AddTorrent(spec, title, poster, data, category, "", selectedFiles)
 
 		if tor.Data != "" && set.BTsets.EnableDebug {
 			log.TLogln("torrent data:", tor.Data)
@@ -98,6 +107,12 @@ func torrentUpload(c *gin.Context) {
 
 			if save {
 				torr.SaveTorrentToDB(tor)
+				
+				// Create .strm files if Jellyfin integration is enabled
+				if set.BTsets.JlfnAutoCreate && set.BTsets.JlfnAddr != "" {
+					log.TLogln("Creating .strm files for uploaded torrent:", tor.Hash().HexString())
+					createStrmFilesForTorrent(tor, c)
+				}
 			}
 		}()
 

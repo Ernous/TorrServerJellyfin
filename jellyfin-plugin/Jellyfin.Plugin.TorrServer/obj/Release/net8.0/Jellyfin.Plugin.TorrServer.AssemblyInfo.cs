@@ -12,11 +12,11 @@ using System.Reflection;
 
 [assembly: System.Reflection.AssemblyCompanyAttribute("Jellyfin.Plugin.TorrServer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
-[assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c92acb8461ea9312b6443e85fd2c848731b82b5d")]
+[assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+139be27afa983fbfda5c38feac1ee1a83c72bf35")]
 [assembly: System.Reflection.AssemblyProductAttribute("Jellyfin.Plugin.TorrServer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Jellyfin.Plugin.TorrServer")]
-[assembly: System.Reflection.AssemblyVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyVersionAttribute("1.0.1")]
 
 // Создано классом WriteCodeFragment MSBuild.
 

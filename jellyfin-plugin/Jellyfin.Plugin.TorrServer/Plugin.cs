@@ -28,16 +28,13 @@ namespace Jellyfin.Plugin.TorrServer
             {
                 new PluginPageInfo
                 {
-                    Name = "TorrServer Settings",
+                    Name = this.Name,
                     EmbeddedResourcePath = string.Format("{0}.Configuration.configPage.html", GetType().Namespace)
                 },
                 new PluginPageInfo
                 {
-                    Name = "Manage Torrents",
-                    EmbeddedResourcePath = string.Format("{0}.Configuration.torrentsPage.html", GetType().Namespace),
-                    MenuSection = "server",
-                    MenuIcon = "cloud_download",
-                    DisplayName = "TorrServer"
+                    Name = "torrentsPage",
+                    EmbeddedResourcePath = string.Format("{0}.Configuration.torrentsPage.html", GetType().Namespace)
                 }
             };
         }

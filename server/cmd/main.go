@@ -165,7 +165,7 @@ func watchTDir(dir string) {
 				if strings.ToLower(filepath.Ext(file.Name())) == ".torrent" {
 					sp, err := openFile(filename)
 					if err == nil {
-						tor, err := torr.AddTorrent(sp, "", "", "", "", "")
+						tor, err := torr.AddTorrent(sp, "", "", "", "", "", nil)
 						if err == nil {
 							if tor.GotInfo() {
 								if tor.Title == "" {

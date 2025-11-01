@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { rgba } from 'polished'
 import { NoImageIcon } from 'icons'
@@ -10,6 +11,8 @@ import {
   Select,
   TextField,
   useTheme,
+  CircularProgress,
+  Box,
 } from '@material-ui/core'
 import { HighlightOff as HighlightOffIcon } from '@material-ui/icons'
 import { TORRENT_CATEGORIES } from 'components/categories'
@@ -25,6 +28,7 @@ import {
   RightSideContainer,
 } from './style'
 import { checkImageURL } from './helpers'
+import FileSelector from './FileSelector'
 
 export default function RightSideComponent({
   setTitle,
@@ -54,9 +58,27 @@ export default function RightSideComponent({
   isCustomTitleEnabled,
   setIsCustomTitleEnabled,
   isEditMode,
+  torrentFiles,
+  selectedFiles,
+  setSelectedFiles,
+  showFileSelector,
+  setTorrentFiles,
+  setShowFileSelector,
+  loadingMetadata,
 }) {
   const { t } = useTranslation()
   const primary = useTheme().palette.primary.main
+
+  // Для magnet-ссылок НЕ загружаем метаданные автоматически
+  // Это будет происходить только после нажатия кнопки Add
+  useEffect(() => {
+    // Сбрасываем состояние при изменении источника
+    if (!torrentSource || !torrentSource.startsWith('magnet:')) {
+      setShowFileSelector(false)
+      setTorrentFiles([])
+      setSelectedFiles([])
+    }
+  }, [torrentSource, setShowFileSelector, setTorrentFiles, setSelectedFiles])
 
   const handleTitleChange = ({ target: { value } }) => setTitle(value)
   const handleCategoryChange = ({ target: { value } }) => setCategory(value)
@@ -202,6 +224,25 @@ export default function RightSideComponent({
           placeholder='e.g., Movies2024 or TVShows/Season1'
         />
 
+        {loadingMetadata ? (
+          <Box display='flex' flexDirection='column' alignItems='center' padding={3}>
+            <CircularProgress />
+            <TextField
+              margin='dense'
+              label={t('LoadingMetadata', 'Loading metadata...')}
+              type='text'
+              variant='outlined'
+              fullWidth
+              disabled
+              value={t('PleaseWait', 'Please wait while torrent metadata is being downloaded...')}
+              helperText={t('ThisMayTakeTime', 'This may take up to 30 seconds')}
+              style={{ marginTop: 16 }}
+            />
+          </Box>
+        ) : showFileSelector ? (
+          <FileSelector torrentFiles={torrentFiles} selectedFiles={selectedFiles} setSelectedFiles={setSelectedFiles} />
+        ) : null}
+
         <PosterWrapper>
           <Poster poster={+isPosterUrlCorrect}>
             {isPosterUrlCorrect ? <img src={posterUrl} alt='poster' /> : <NoImageIcon />}
@@ -252,15 +293,15 @@ export default function RightSideComponent({
       </RightSideContainer>
 
       <RightSideContainer
-        isError={torrentSource && (!isTorrentSourceCorrect || isHashAlreadyExists)}
+        isError={torrentSource && (!isTorrentSourceCorrect || (isHashAlreadyExists && !torrentSource.startsWith('magnet:')))}
         notificationMessage={
           !torrentSource
             ? t('AddDialog.AddTorrentSourceNotification')
             : !isTorrentSourceCorrect
             ? t('AddDialog.WrongTorrentSource')
-            : isHashAlreadyExists && t('AddDialog.HashExists')
+            : isHashAlreadyExists && !torrentSource.startsWith('magnet:') && t('AddDialog.HashExists')
         }
-        isHidden={isEditMode || (isTorrentSourceCorrect && !isHashAlreadyExists)}
+        isHidden={isEditMode || (isTorrentSourceCorrect && (!isHashAlreadyExists || torrentSource.startsWith('magnet:')))}
       />
     </RightSide>
   )

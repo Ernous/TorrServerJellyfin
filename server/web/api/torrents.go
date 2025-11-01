@@ -26,14 +26,15 @@ import (
 // Action: add, get, set, rem, list, drop
 type torrReqJS struct {
 	requestI
-	Link     string `json:"link,omitempty"`
-	Hash     string `json:"hash,omitempty"`
-	Title    string `json:"title,omitempty"`
-	Category string `json:"category,omitempty"`
-	Poster   string `json:"poster,omitempty"`
-	Data     string `json:"data,omitempty"`
-	StrmDir  string `json:"strm_dir,omitempty"`  // Custom directory for .strm files
-	SaveToDB bool   `json:"save_to_db,omitempty"`
+	Link          string `json:"link,omitempty"`
+	Hash          string `json:"hash,omitempty"`
+	Title         string `json:"title,omitempty"`
+	Category      string `json:"category,omitempty"`
+	Poster        string `json:"poster,omitempty"`
+	Data          string `json:"data,omitempty"`
+	StrmDir       string `json:"strm_dir,omitempty"`       // Custom directory for .strm files
+	SelectedFiles []int  `json:"selected_files,omitempty"` // List of file IDs to create .strm for
+	SaveToDB      bool   `json:"save_to_db,omitempty"`
 }
 
 // torrents godoc
@@ -115,7 +116,7 @@ func addTorrent(req torrReqJS, c *gin.Context) {
 		}
 	}
 
-	tor, err := torr.AddTorrent(torrSpec, req.Title, req.Poster, req.Data, req.Category, req.StrmDir)
+	tor, err := torr.AddTorrent(torrSpec, req.Title, req.Poster, req.Data, req.Category, req.StrmDir, req.SelectedFiles)
 	// if tor.Data != "" && set.BTsets.EnableDebug {
 	// 	log.TLogln("torrent data:", tor.Data)
 	// }
@@ -191,13 +192,13 @@ func remTorrent(req torrReqJS, c *gin.Context) {
 		c.AbortWithError(http.StatusBadRequest, errors.New("hash is empty"))
 		return
 	}
-	
+
 	// Get torrent info before removing for .strm cleanup
 	tor := torr.GetTorrent(req.Hash)
 	if tor != nil && set.BTsets.JlfnAddr != "" {
 		removeStrmFilesForTorrent(tor)
 	}
-	
+
 	torr.RemTorrent(req.Hash)
 	// TODO: remove
 	if set.BTsets.EnableDLNA {
@@ -303,11 +304,11 @@ func createStrmFilesForTorrent(tor *torr.Torrent, c *gin.Context) {
 	// Determine category (serials/films)
 	catPath := ""
 	torName := tor.Name()
-	
+
 	// Use torrent category from web UI if available
 	torCategory := strings.ToLower(tor.Category)
 	log.TLogln("Torrent category from UI:", torCategory)
-	
+
 	// Map Russian/English categories to folder names
 	switch torCategory {
 	case "сериалы", "серіали", "serials", "series", "tv", "tv shows":
@@ -321,9 +322,9 @@ func createStrmFilesForTorrent(tor *torr.Torrent, c *gin.Context) {
 		torTitle := strings.ToLower(torName)
 		seasonPattern := regexp.MustCompile(`(?i)s\d+|season\s+\d+`)
 		episodePattern := regexp.MustCompile(`(?i)e\d+|episode\s+\d+`)
-		
+
 		isSeries := seasonPattern.MatchString(torTitle) || episodePattern.MatchString(torTitle)
-		
+
 		if isSeries {
 			catPath = "torrSerials"
 			log.TLogln("Auto-detected as TV series (found season/episode pattern)")
@@ -349,6 +350,21 @@ func createStrmFilesForTorrent(tor *torr.Torrent, c *gin.Context) {
 	// Create .strm files for each video file
 	for _, f := range torrents.FileStats {
 		if utils.GetMimeType(f.Path) != "*/*" {
+			// Check if this file is selected (if SelectedFiles is specified)
+			if len(tor.SelectedFiles) > 0 {
+				fileSelected := false
+				for _, selectedID := range tor.SelectedFiles {
+					if selectedID == f.Id {
+						fileSelected = true
+						break
+					}
+				}
+				if !fileSelected {
+					log.TLogln("Skipping file (not selected):", f.Path)
+					continue
+				}
+			}
+
 			// Create stream URL
 			fileName := filepath.Base(f.Path)
 			streamURL := fmt.Sprintf("%s/stream/%s?link=%s&index=%d&play",
@@ -378,13 +394,17 @@ func createStrmFilesForTorrent(tor *torr.Torrent, c *gin.Context) {
 				continue
 			}
 
-			// Write .strm file
-			if err := os.WriteFile(strmPath, []byte(streamURL), 0644); err != nil {
+			// Write .strm file with explicit newline (Unix-style)
+			// This ensures compatibility with Jellyfin on both Windows and Linux
+			strmContent := streamURL + "\n"
+			if err := os.WriteFile(strmPath, []byte(strmContent), 0644); err != nil {
 				log.TLogln("Error writing .strm file:", err)
 				continue
 			}
 
 			log.TLogln("Created .strm file:", strmPath)
+			log.TLogln("  URL:", streamURL)
+			log.TLogln("  Size:", len(strmContent), "bytes")
 		}
 	}
 
@@ -401,7 +421,7 @@ func removeStrmFilesForTorrent(tor *torr.Torrent) {
 	// Use saved path if available
 	if tor.StrmPath != "" {
 		log.TLogln("Removing .strm files from saved path:", tor.StrmPath)
-		
+
 		// Remove torrent directory
 		if err := os.RemoveAll(tor.StrmPath); err != nil {
 			log.TLogln("Error removing torrent directory:", err)
@@ -440,7 +460,7 @@ func removeStrmFilesForTorrent(tor *torr.Torrent) {
 	// Determine category (same logic as in createStrmFilesForTorrent)
 	catPath := ""
 	torCategory := strings.ToLower(tor.Category)
-	
+
 	switch torCategory {
 	case "сериалы", "серіали", "serials", "series", "tv", "tv shows":
 		catPath = "torrSerials"
@@ -451,9 +471,9 @@ func removeStrmFilesForTorrent(tor *torr.Torrent) {
 		torTitle := strings.ToLower(torName)
 		seasonPattern := regexp.MustCompile(`(?i)s\d+|season\s+\d+`)
 		episodePattern := regexp.MustCompile(`(?i)e\d+|episode\s+\d+`)
-		
+
 		isSeries := seasonPattern.MatchString(torTitle) || episodePattern.MatchString(torTitle)
-		
+
 		if isSeries {
 			catPath = "torrSerials"
 		} else {

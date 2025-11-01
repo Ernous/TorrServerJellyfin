@@ -20,12 +20,13 @@ import (
 )
 
 type Torrent struct {
-	Title    string
-	Category string
-	Poster   string
-	Data     string
-	StrmDir  string // Custom directory for .strm files (Jellyfin integration)
-	StrmPath string // Full path where .strm files are stored
+	Title         string
+	Category      string
+	Poster        string
+	Data          string
+	StrmDir       string // Custom directory for .strm files (Jellyfin integration)
+	StrmPath      string // Full path where .strm files are stored
+	SelectedFiles []int  // List of file IDs to create .strm for (empty = all files)
 	*torrent.TorrentSpec
 
 	Stat      state.TorrentStat

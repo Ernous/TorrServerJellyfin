@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>TorrServer</title>
+</head>
+<body>
+    <div id="TorrServerConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox">
+        <div data-role="content">
+            <div class="content-primary">
+                <form id="TorrServerConfigForm">
+                    
+                    <div class="verticalSection">
+                        <h2 class="sectionTitle">TorrServer Connection</h2>
+                        
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="txtTorrServerUrl">TorrServer URL</label>
+                            <input is="emby-input" type="text" id="txtTorrServerUrl" name="txtTorrServerUrl" />
+                            <div class="fieldDescription">URL of your TorrServer instance (e.g., http://localhost:8090)</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="txtUsername">Username (optional)</label>
+                            <input is="emby-input" type="text" id="txtUsername" name="txtUsername" />
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="txtPassword">Password (optional)</label>
+                            <input is="emby-input" type="password" id="txtPassword" name="txtPassword" />
+                        </div>
+                    </div>
+
+                    <div class="verticalSection">
+                        <h2 class="sectionTitle">.strm Files Configuration</h2>
+                        
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label>
+                                <input is="emby-checkbox" type="checkbox" id="chkAutoCreateStrm" />
+                                <span>Auto-create .strm files</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">Automatically create .strm files when adding torrents</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="txtStrmPath">.strm Files Path</label>
+                            <input is="emby-input" type="text" id="txtStrmPath" name="txtStrmPath" />
+                            <div class="fieldDescription">Path where .strm files will be created (e.g., /media/strm)</div>
+                        </div>
+
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="selectDefaultCategory">Default Category</label>
+                            <select is="emby-select" id="selectDefaultCategory" name="selectDefaultCategory" class="emby-select-withcolor emby-select">
+                                <option value="Movies">Movies</option>
+                                <option value="TV">TV Shows</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="verticalSection">
+                        <h2 class="sectionTitle">Cache Settings</h2>
+                        
+                        <div class="selectContainer">
+                            <label class="selectLabel" for="selectCacheType">Cache Storage Type</label>
+                            <select is="emby-select" id="selectCacheType" name="selectCacheType" class="emby-select-withcolor emby-select">
+                                <option value="ram">RAM (Memory)</option>
+                                <option value="disk">Disk (Storage)</option>
+                            </select>
+                            <div class="fieldDescription">Choose where to store cache: RAM (faster) or Disk (persistent)</div>
+                        </div>
+
+                        <div class="inputContainer" id="containerDiskCachePath" style="display: none;">
+                            <label class="inputLabel inputLabelUnfocused" for="txtDiskCachePath">Disk Cache Path</label>
+                            <input is="emby-input" type="text" id="txtDiskCachePath" name="txtDiskCachePath" />
+                            <div class="fieldDescription">Path where disk cache will be stored (e.g., /cache/torrserver)</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="txtCacheSize">Cache Size (MB)</label>
+                            <input is="emby-input" type="number" id="txtCacheSize" name="txtCacheSize" min="32" max="2048" />
+                            <div class="fieldDescription">Amount of memory/disk to use for caching (32-2048 MB)</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="txtReaderReadAHead">Reader Read Ahead (%)</label>
+                            <input is="emby-input" type="number" id="txtReaderReadAHead" name="txtReaderReadAHead" min="50" max="100" />
+                            <div class="fieldDescription">Percentage of cache to preload (50-100%)</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="txtPreloadCache">Preload Cache (%)</label>
+                            <input is="emby-input" type="number" id="txtPreloadCache" name="txtPreloadCache" min="0" max="100" />
+                            <div class="fieldDescription">Percentage to preload before playback (0-100%)</div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label>
+                                <input is="emby-checkbox" type="checkbox" id="chkRemoveCacheOnDrop" />
+                                <span>Remove Cache on Drop</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">Delete cache when torrent is removed</div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label>
+                                <input is="emby-checkbox" type="checkbox" id="chkRemoveCacheOnStop" />
+                                <span>Remove Cache on Video Stop</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">Delete cache when video playback stops</div>
+                        </div>
+                    </div>
+
+                    <div class="verticalSection">
+                        <h2 class="sectionTitle">TMDB Integration</h2>
+                        
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="txtTmdbApiKey">TMDB API Key</label>
+                            <input is="emby-input" type="text" id="txtTmdbApiKey" name="txtTmdbApiKey" />
+                            <div class="fieldDescription">API key from themoviedb.org for automatic posters and metadata</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            var TorrServerConfig = {
+                pluginUniqueId: 'a8b12c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d'
+            };
+
+            document.getElementById('TorrServerConfigPage').addEventListener('pageshow', function () {
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(TorrServerConfig.pluginUniqueId).then(function (config) {
+                    document.getElementById('txtTorrServerUrl').value = config.TorrServerUrl || 'http://localhost:8090';
+                    document.getElementById('txtUsername').value = config.TorrServerUsername || '';
+                    document.getElementById('txtPassword').value = config.TorrServerPassword || '';
+                    document.getElementById('chkAutoCreateStrm').checked = config.AutoCreateStrm;
+                    document.getElementById('txtStrmPath').value = config.StrmPath || '/media/strm';
+                    document.getElementById('selectDefaultCategory').value = config.DefaultCategory || 'Movies';
+                    document.getElementById('selectCacheType').value = config.UseDisk ? 'disk' : 'ram';
+                    document.getElementById('txtDiskCachePath').value = config.DiskCachePath || '/cache/torrserver';
+                    document.getElementById('txtCacheSize').value = config.CacheSize || 64;
+                    document.getElementById('txtReaderReadAHead').value = config.ReaderReadAHead || 95;
+                    document.getElementById('txtPreloadCache').value = config.PreloadCache || 50;
+                    document.getElementById('chkRemoveCacheOnDrop').checked = config.RemoveCacheOnDrop;
+                    document.getElementById('chkRemoveCacheOnStop').checked = config.RemoveCacheOnStop;
+                    document.getElementById('txtTmdbApiKey').value = config.TmdbApiKey || '';
+                    
+                    // Show/hide disk cache path based on selection
+                    toggleDiskCachePath();
+                    Dashboard.hideLoadingMsg();
+                });
+            });
+
+            // Toggle disk cache path visibility
+            function toggleDiskCachePath() {
+                const cacheType = document.getElementById('selectCacheType').value;
+                const container = document.getElementById('containerDiskCachePath');
+                container.style.display = cacheType === 'disk' ? 'block' : 'none';
+            }
+
+            document.getElementById('selectCacheType').addEventListener('change', toggleDiskCachePath);
+
+            document.getElementById('TorrServerConfigForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+                Dashboard.showLoadingMsg();
+
+                ApiClient.getPluginConfiguration(TorrServerConfig.pluginUniqueId).then(function (config) {
+                    config.TorrServerUrl = document.getElementById('txtTorrServerUrl').value;
+                    config.TorrServerUsername = document.getElementById('txtUsername').value;
+                    config.TorrServerPassword = document.getElementById('txtPassword').value;
+                    config.AutoCreateStrm = document.getElementById('chkAutoCreateStrm').checked;
+                    config.StrmPath = document.getElementById('txtStrmPath').value;
+                    config.DefaultCategory = document.getElementById('selectDefaultCategory').value;
+                    config.UseDisk = document.getElementById('selectCacheType').value === 'disk';
+                    config.DiskCachePath = document.getElementById('txtDiskCachePath').value;
+                    config.CacheSize = parseInt(document.getElementById('txtCacheSize').value);
+                    config.ReaderReadAHead = parseInt(document.getElementById('txtReaderReadAHead').value);
+                    config.PreloadCache = parseInt(document.getElementById('txtPreloadCache').value);
+                    config.RemoveCacheOnDrop = document.getElementById('chkRemoveCacheOnDrop').checked;
+                    config.RemoveCacheOnStop = document.getElementById('chkRemoveCacheOnStop').checked;
+                    config.TmdbApiKey = document.getElementById('txtTmdbApiKey').value;
+
+                    ApiClient.updatePluginConfiguration(TorrServerConfig.pluginUniqueId, config).then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                    });
+                });
+
+                return false;
+            });
+        </script>
+    </div>
+</body>
+</html>

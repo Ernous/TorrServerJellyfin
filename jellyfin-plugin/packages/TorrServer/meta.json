@@ -1,0 +1,12 @@
+{
+  "version": "1.0.1",
+  "guid": "a8b12c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d",
+  "overview": "TorrServer integration for Jellyfin",
+  "changelog": "Bug fixes and improvements",
+  "owner": "Ernous",
+  "description": "Manage torrents directly from Jellyfin with TorrServer integration",
+  "targetAbi": "10.9.0.0",
+  "timestamp": "2025-11-01T14:06:45Z",
+  "category": "General",
+  "name": "TorrServer"
+}

@@ -49,6 +49,11 @@ export default function AddDialog({
   const [skipDebounce, setSkipDebounce] = useState(false)
   const [isCustomTitleEnabled, setIsCustomTitleEnabled] = useState(false)
   const [currentSourceHash, setCurrentSourceHash] = useState()
+  const [torrentFiles, setTorrentFiles] = useState([])
+  const [selectedFiles, setSelectedFiles] = useState([])
+  const [showFileSelector, setShowFileSelector] = useState(false)
+  const [loadingMetadata, setLoadingMetadata] = useState(false)
+  const [addedTorrentHash, setAddedTorrentHash] = useState(null)
 
   const ref = useOnStandaloneAppOutsideClick(handleClose)
 
@@ -56,7 +61,22 @@ export default function AddDialog({
 
   useEffect(() => {
     // getting hash from added torrent source
-    parseTorrent.remote(selectedFile || torrentSource, (_, { infoHash } = {}) => setCurrentSourceHash(infoHash))
+    parseTorrent.remote(selectedFile || torrentSource, (_, { infoHash, files } = {}) => {
+      setCurrentSourceHash(infoHash)
+      // Extract file list from torrent metadata (only works for .torrent files, not magnets)
+      if (files && files.length > 0) {
+        const fileList = files.map((file, index) => ({
+          id: index,
+          path: file.path || file.name,
+          length: file.length,
+        }))
+        setTorrentFiles(fileList)
+        setShowFileSelector(true)
+      } else {
+        // For magnet links, files will be available after metadata download
+        setShowFileSelector(false)
+      }
+    })
   }, [selectedFile, torrentSource])
 
   useEffect(() => {
@@ -200,6 +220,63 @@ export default function AddDialog({
     isUserInteractedWithPoster,
   ])
 
+  const loadMagnetMetadata = async (hash) => {
+    setAddedTorrentHash(hash)
+    setLoadingMetadata(true)
+    
+    // Ждем пока торрент загрузит метаданные
+    let attempts = 0
+    const maxAttempts = 60 // 30 секунд
+    
+    const checkFiles = async () => {
+      try {
+        const filesResponse = await axios.post(torrentsHost(), {
+          action: 'get',
+          hash,
+        })
+        
+        const files = filesResponse.data?.file_stats || []
+        const videoFiles = files.filter(f => {
+          const ext = f.path.toLowerCase().split('.').pop()
+          return ['mkv', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'm4v'].includes(ext)
+        })
+        
+        if (videoFiles.length > 0) {
+          // Метаданные загружены, показываем выбор файлов
+          setTorrentFiles(videoFiles)
+          const allIds = videoFiles.map(f => f.id)
+          setSelectedFiles(allIds)
+          setShowFileSelector(true)
+          setLoadingMetadata(false)
+          setIsSaving(false)
+          
+          // Остаемся в диалоге для выбора файлов
+          return true
+        }
+        
+        attempts++
+        if (attempts >= maxAttempts) {
+          setLoadingMetadata(false)
+          setIsSaving(false)
+          handleClose() // Закрываем если не удалось получить метаданные
+          return false
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 500))
+        return checkFiles()
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Error fetching metadata:', error)
+        setLoadingMetadata(false)
+        setIsSaving(false)
+        handleClose()
+        return false
+      }
+    }
+    
+    await checkFiles()
+  }
+
   const handleSave = () => {
     setIsSaving(true)
 
@@ -212,6 +289,8 @@ export default function AddDialog({
           poster: posterUrl,
           category,
           strm_dir: strmDir,
+          selected_files:
+            selectedFiles.length > 0 && selectedFiles.length < torrentFiles.length ? selectedFiles : undefined,
         })
         .finally(handleClose)
     } else if (selectedFile) {
@@ -223,20 +302,54 @@ export default function AddDialog({
       category && data.append('category', category)
       posterUrl && data.append('poster', posterUrl)
       strmDir && data.append('strm_dir', strmDir)
+      // Всегда передаем selected_files если есть выбранные файлы
+      if (selectedFiles.length > 0) {
+        // eslint-disable-next-line no-console
+        console.log('Adding selected_files:', selectedFiles)
+        data.append('selected_files', JSON.stringify(selectedFiles))
+      } else {
+        // eslint-disable-next-line no-console
+        console.log('No selected files. selectedFiles:', selectedFiles.length, 'torrentFiles:', torrentFiles.length)
+      }
       axios.post(torrentUploadHost(), data).catch(handleClose)
     } else {
-      // link save
-      axios
-        .post(torrentsHost(), {
-          action: 'add',
-          link: torrentSource,
-          title,
-          category,
-          poster: posterUrl,
-          strm_dir: strmDir,
-          save_to_db: true,
-        })
-        .catch(handleClose)
+      // link save (magnet or http link)
+      const isMagnet = torrentSource.startsWith('magnet:')
+      
+      // Для magnet-ссылок проверяем, не существует ли торрент уже
+      if (isMagnet && isHashAlreadyExists && currentSourceHash) {
+        // Торрент уже существует, просто загружаем метаданные
+        loadMagnetMetadata(currentSourceHash)
+      } else {
+        // Для обычных торрентов - сохраняем с выбранными файлами
+        // Для новых magnet-ссылок - сначала добавляем, потом ждем метаданные
+        axios
+          .post(torrentsHost(), {
+            action: 'add',
+            link: torrentSource,
+            title,
+            category,
+            poster: posterUrl,
+            strm_dir: strmDir,
+            selected_files: !isMagnet && selectedFiles.length > 0 && selectedFiles.length < torrentFiles.length ? selectedFiles : undefined,
+            save_to_db: true,
+          })
+          .then(async response => {
+            if (isMagnet && response.data?.hash) {
+              // Для magnet-ссылок загружаем метаданные
+              await loadMagnetMetadata(response.data.hash)
+            } else {
+              // Для обычных ссылок просто закрываем
+              handleClose()
+            }
+          })
+          .catch((error) => {
+            // eslint-disable-next-line no-console
+            console.error('Error adding torrent:', error)
+            setIsSaving(false)
+            // Не закрываем диалог, чтобы пользователь мог попробовать снова
+          })
+      }
     }
   }
 
@@ -282,6 +395,13 @@ export default function AddDialog({
           isCustomTitleEnabled={isCustomTitleEnabled}
           setIsCustomTitleEnabled={setIsCustomTitleEnabled}
           isEditMode={isEditMode}
+          torrentFiles={torrentFiles}
+          selectedFiles={selectedFiles}
+          setSelectedFiles={setSelectedFiles}
+          showFileSelector={showFileSelector}
+          setTorrentFiles={setTorrentFiles}
+          setShowFileSelector={setShowFileSelector}
+          loadingMetadata={loadingMetadata}
         />
       </Content>
 
@@ -290,16 +410,51 @@ export default function AddDialog({
           {t('Cancel')}
         </Button>
 
-        <Button
-          variant='contained'
-          style={{ minWidth: '110px' }}
-          disabled={!torrentSource || (isHashAlreadyExists && !isEditMode) || !isTorrentSourceCorrect}
-          onClick={handleSave}
-          color='secondary'
-        >
-          {isSaving ? <CircularProgress style={{ color: 'white' }} size={20} /> : t(isEditMode ? 'Save' : 'Add')}
-        </Button>
+        {showFileSelector && addedTorrentHash ? (
+          // После загрузки метаданных показываем кнопку для сохранения с выбранными файлами
+          <Button
+            variant='contained'
+            style={{ minWidth: '110px' }}
+            disabled={selectedFiles.length === 0}
+            onClick={async () => {
+              try {
+                // Обновляем торрент с выбранными файлами
+                await axios.post(torrentsHost(), {
+                  action: 'set',
+                  hash: addedTorrentHash,
+                  selected_files: selectedFiles.length < torrentFiles.length ? selectedFiles : undefined,
+                })
+                handleClose()
+              } catch (error) {
+                // eslint-disable-next-line no-console
+                console.error('Error updating torrent:', error)
+                handleClose()
+              }
+            }}
+            color='secondary'
+          >
+            {t('CreateStrmFiles', 'Create .strm files')}
+          </Button>
+        ) : (
+          // Обычная кнопка Add или Load Files для существующих magnet-торрентов
+          <Button
+            variant='contained'
+            style={{ minWidth: '110px' }}
+            disabled={!torrentSource || (isHashAlreadyExists && !isEditMode && !torrentSource.startsWith('magnet:')) || !isTorrentSourceCorrect || loadingMetadata}
+            onClick={handleSave}
+            color='secondary'
+          >
+            {isSaving || loadingMetadata ? (
+              <CircularProgress style={{ color: 'white' }} size={20} />
+            ) : isHashAlreadyExists && torrentSource.startsWith('magnet:') ? (
+              t('LoadFiles', 'Load Files')
+            ) : (
+              t(isEditMode ? 'Save' : 'Add')
+            )}
+          </Button>
+        )}
       </ButtonWrapper>
+
     </StyledDialog>
   )
 }

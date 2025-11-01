@@ -41,6 +41,7 @@ func AddTorrentDB(torr *Torrent) {
 	}
 	t.StrmDir = torr.StrmDir
 	t.StrmPath = torr.StrmPath
+	t.SelectedFiles = torr.SelectedFiles
 	// don't override timestamp from DB on edit
 	t.Timestamp = torr.Timestamp // time.Now().Unix()
 
@@ -61,6 +62,7 @@ func GetTorrentDB(hash metainfo.Hash) *Torrent {
 			torr.Data = db.Data
 			torr.StrmDir = db.StrmDir
 			torr.StrmPath = db.StrmPath
+			torr.SelectedFiles = db.SelectedFiles
 			torr.Stat = state.TorrentInDB
 			return torr
 		}
@@ -86,6 +88,7 @@ func ListTorrentsDB() map[metainfo.Hash]*Torrent {
 		torr.Data = db.Data
 		torr.StrmDir = db.StrmDir
 		torr.StrmPath = db.StrmPath
+		torr.SelectedFiles = db.SelectedFiles
 		torr.Stat = state.TorrentInDB
 		ret[torr.TorrentSpec.InfoHash] = torr
 	}

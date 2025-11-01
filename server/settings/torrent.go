@@ -12,12 +12,13 @@ import (
 type TorrentDB struct {
 	*torrent.TorrentSpec
 
-	Title    string `json:"title,omitempty"`
-	Category string `json:"category,omitempty"`
-	Poster   string `json:"poster,omitempty"`
-	Data     string `json:"data,omitempty"`
-	StrmDir  string `json:"strm_dir,omitempty"`  // Custom directory for .strm files
-	StrmPath string `json:"strm_path,omitempty"` // Full path where .strm files are stored
+	Title         string `json:"title,omitempty"`
+	Category      string `json:"category,omitempty"`
+	Poster        string `json:"poster,omitempty"`
+	Data          string `json:"data,omitempty"`
+	StrmDir       string `json:"strm_dir,omitempty"`       // Custom directory for .strm files
+	StrmPath      string `json:"strm_path,omitempty"`      // Full path where .strm files are stored
+	SelectedFiles []int  `json:"selected_files,omitempty"` // List of file IDs to create .strm for (empty = all files)
 
 	Timestamp int64 `json:"timestamp,omitempty"`
 	Size      int64 `json:"size,omitempty"`

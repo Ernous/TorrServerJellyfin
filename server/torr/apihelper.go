@@ -37,7 +37,7 @@ func LoadTorrent(tor *Torrent) *Torrent {
 	return tr
 }
 
-func AddTorrent(spec *torrent.TorrentSpec, title, poster string, data string, category string, strmDir string) (*Torrent, error) {
+func AddTorrent(spec *torrent.TorrentSpec, title, poster string, data string, category string, strmDir string, selectedFiles []int) (*Torrent, error) {
 	torr, err := NewTorrent(spec, bts)
 	if err != nil {
 		log.TLogln("error add torrent:", err)
@@ -82,6 +82,12 @@ func AddTorrent(spec *torrent.TorrentSpec, title, poster string, data string, ca
 		if torr.StrmDir == "" && torDB != nil {
 			torr.StrmDir = torDB.StrmDir
 		}
+	}
+
+	if len(selectedFiles) > 0 {
+		torr.SelectedFiles = selectedFiles
+	} else if torDB != nil && len(torDB.SelectedFiles) > 0 {
+		torr.SelectedFiles = torDB.SelectedFiles
 	}
 
 	return torr, nil
