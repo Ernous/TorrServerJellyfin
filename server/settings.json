@@ -20,7 +20,7 @@
     "PeersListenPort": 0,
     "PreloadCache": 50,
     "ReaderReadAHead": 95,
-    "RemoveCacheOnDrop": false,
+    "RemoveCacheOnDrop": true,
     "ResponsiveMode": false,
     "RetrackersMode": 1,
     "SslCert": "",

@@ -1,3 +1,5 @@
+//go:build !tray
+
 package main
 
 import (

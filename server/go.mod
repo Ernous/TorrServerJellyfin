@@ -10,6 +10,7 @@ replace (
 )
 
 require (
+	fyne.io/systray v1.11.0
 	github.com/agnivade/levenshtein v1.2.1
 	github.com/alexflint/go-arg v1.5.0
 	github.com/anacrolix/dms v1.7.1
@@ -31,6 +32,7 @@ require (
 	go.etcd.io/bbolt v1.4.0
 	golang.org/x/exp v0.0.0-20250606033433-dcc06ee1d476
 	golang.org/x/image v0.28.0
+	golang.org/x/sys v0.33.0
 	golang.org/x/time v0.12.0
 	gopkg.in/telebot.v4 v4.0.0-beta.5
 	gopkg.in/vansante/go-ffprobe.v2 v2.2.1
@@ -75,6 +77,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.26.0 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
+	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
@@ -96,7 +99,6 @@ require (
 	golang.org/x/crypto v0.39.0 // indirect
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sync v0.15.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
 	golang.org/x/tools v0.34.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
